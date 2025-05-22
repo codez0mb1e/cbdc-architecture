@@ -9,8 +9,11 @@ namespace BlockchainLayer {
     entity Address {
         Уникальный адрес (неизменяемая сущность).
         --
-        Включает в себя адреса смарт-контрактов и обычных пользователей.
-        Включает в себя специальный `0x0000`-адрес для сжигания и создания токенов.
+        Включает в себя адреса смарт-контрактов и 
+        обычных пользователей.
+
+        Включает в себя специальный `0x0000`-адрес 
+        для сжигания и создания токенов.
         ==
         +hex: str!
         +type: Literal["UserWallet", "SmartContract"]
@@ -19,7 +22,8 @@ namespace BlockchainLayer {
     entity Transaction {
         Транзакция.
         --
-        Транзакция может быть обычной (перевод Цифровых рублей или токенов) или 
+        Транзакция может быть обычной (перевод 
+        Цифровых рублей или токенов) или 
         специальной (вызов смарт-контрактов).
         ==
         .. Generic ..
@@ -43,28 +47,29 @@ namespace BlockchainLayer {
     }
 
 
-    entity Contract {
+    entity SmartContract {
         Смарт-контракт (неизменяемая сущность).
         --
-        Смарт-контракт может быть специального типа (например, взамозаменяемый токен) 
-        или общим (например, для управления активами).
+        Смарт-контракт может быть специального типа (например, 
+        взамозаменяемый токен) или общим (например, 
+        для управления активами).
         ==
         +name: str?
         +ABI: byte[]
         +type: Literal["None", "CB-20", "CB-721"]
     }
-    Address <|-- Contract
-    Address .. Contract : < deployed_by:{address.hex}|deployed_at:(datetime)
-    Address .. Contract : < initiated_by:{address.hex}
-    Contract .. Transaction : > created_in:{transaction.hash}
+    SmartContract -u-|> Address
+    Address .. SmartContract : < deployed_by:{address.hex}|deployed_at:(datetime)
+    Address .. SmartContract : < initiated_by:{address.hex}
+    SmartContract .. Transaction : > created_in:{transaction.hash}
 
 
-    class Block {
+    entity Block {
         Блок в Блокчейне.
         --
         Блок содержит список транзакций и метаданные о блоке.
-        Блоки могут быть пустыми (например, в случае создания нового блока) или
-        содержать транзакции.
+        Блоки могут быть пустыми (например, в случае создания 
+        нового блока) или содержать транзакции.
         ==
         +hash: str!
         +parent_hash: str
@@ -74,24 +79,29 @@ namespace BlockchainLayer {
         +block_reward: decimal
         +status: Literal["Pending", "Mined", "Orphaned"]
     }
-    Block .. Transaction : > include_transactions:{transaction.hash}
-    Block .. Address : > mined_by:{address.hex}
+    Block o.l. Transaction : > include_transactions:{transaction.hash}
+    Block .u. Address : > mined_by:{address.hex}
 }
 
 
 namespace PaymentsProcessing {
-    entity Balances {
+    class Balances {
         Баланс.
         --
-        Баланс может быть в разных токенах.
+        Представляет собой словарь, где 
+        ключ - адрес токена, а значение -
+        баланс токена.
         ==
         -_balances: dict[Address, decimal]
     }
+    Balances .d. Address : > has_address:{address.hex}
 
-    class Wallet {
+    entity Wallet {
         Кошелек пользователя.
         --
-        Используется для хранения и управления цифровыми активами.
+        Используется для хранения и управления
+        цифровыми активами.
+
         Кошелек может быть связан с несколькими адресами.
         ==
         +get_balances(address: Address?): dict[Address, Balances]
@@ -100,14 +110,20 @@ namespace PaymentsProcessing {
         +limits: dict[str, float]
     }
     Wallet o-- Address : > associated_with_addresses:{address.hex}
+    Wallet *.d. Balances : > has_balances:{address.hex}
 
 
-    class Vault {
+    entity Vault {
         Хранилище цифровых активов (Vault).
         --
-        Специальный тип кошелька, который как хранилище для цифровых активов.
-        Хранилище может быть управляться несколькими адресами или через логику Смарт-контракта.
-        Используется для сделок с обеспечением при кредитовании/недостаточности средств у клиентов.
+        Специальный тип кошелька, который как хранилище 
+        для цифровых активов.
+
+        Хранилище может быть управляться несколькими адресами 
+        или через логику Смарт-контракта.
+
+        Используется для сделок с обеспечением при кредитовании 
+        или недостаточности средств у клиентов.
         ==
         +name: str?
         +get_balances(): Balances
@@ -115,27 +131,8 @@ namespace PaymentsProcessing {
         +withdrawFrom(address: Address, amount: decimal): Transaction
     }
     Vault o-- Address : > has_address:{address.hex}
-    Vault -- Address : > managed_by:{address.hex}
-
-
-    class Transfers {
-        Специальный тип транзакции.
-        ==
-        .. Generic ..
-        +id: str!
-        +amount: decimal
-        +token: Address
-        +created_at: datetime
-        +from: Address
-        +to: Address
-        .. Transaction related ..
-        _transaction: Transaction
-        +commit(): Transaction
-        +revert(): Transaction
-        +get_status(): Literal["Pending", "Confirmed", "Failed"]
-    }
-    Transfers .. Wallet : > from:{wallet.id}
-    Transfers .. Wallet : > to:{wallet.id}
+    Vault .. Address : > managed_by:{address.hex}
+    Vault *.d. Balances : > has_balances:{address.hex}
 }
 
 
@@ -146,37 +143,50 @@ namespace Accounting {
         ==
         +id: str!
         +wallets: list[Wallet]
-    }
-    Account o-- Wallet : > has_wallets:{wallet.hex}
-
-    class FiatAccount {
-        Фиатный аккаунт.
-        --
-        Содержит информацию о фиатных аккаунтах.
-        Нужен для поддержки работы свопа из фиатных валют в цифровые активы.
-        ==
-        +id: str!
-        +frozen(amount: decimal): Transaction
-        +unfrozen(amount: decimal): Transaction
-        +transferToWallet(wallet: Wallet, amount: decimal): Transaction
+        +status: Literal["New", "Active", "Blocked"]
+        .. Stats ..
+        +first_seen_at: datetime
+        +last_seen_at: datetime
+        +total_transactions: uint64
+        .. Risk and fraud related ..
+        +fraud_score: float
     }
     
-    class BusinessAccount {
+    entity BusinessAccount {
         Эккаунт для ЮЛ
         ==
+        .. Public company info ..
+        +company_name: str
+        +company_inn: str
+        +company_ogrn: str
+        .. Flow stats ..
+        +total_amount: decimal
+        +in_flow: decimal
+        +out_flow: decimal
+        +balance: decimal
+        .. Risk and fraud related ..
+        +default_risk_score: float
     }
     Account <|-- BusinessAccount
+    BusinessAccount o.d. Wallet : > registred_wallets:{wallet.hex}
 
-    class PrivatePersonAccount {
+
+    entity PrivatePersonAccount {
         Эккаунт для ФЛ
         ==
+        .. Public person info ..
+        +nicname: str
+        .. Agreements ..
+        +sign_agreement(agrmnt): bool
+        +get_agreements(): list
     }
     Account <|-- PrivatePersonAccount
+    PrivatePersonAccount o.d. Wallet : > binding_wallets:{wallet.hex}
 }
 
 
 namespace DigitalRubble {
-    class DigitalRubbleSmartContract {
+    entity DigitalRubbleToken {
         Смарт-контракт Цифрового Рубля.
         ==
         .. Transfers ..
@@ -188,13 +198,22 @@ namespace DigitalRubble {
         +frozen(address: Address, amount: decimal?): Transaction
         +unfrozen(address: Address, amount: decimal?): Transaction
     }
+    DigitalRubbleToken o-- Address : > has_address:{address.hex}
+    DigitalRubbleToken -d- SmartContract : > deployed_as:{contract.hash}
+    DigitalRubbleToken .d. Transaction : > created_in:{transaction.hash}
 
-    class Справочники {
-        Справочники для работы с Цифровым Рублем.
+
+    class DigitalRubbleBridge {
+        Мост (смарт-контракт) для работы с Цифровым Рублем.
         --
-        -blocked_accounts: list[Account]
-        -frozen_wallets: list[Wallet]
-        -СУПлЦ_лист: list[str]
-}
+        Позволяет пользователям обменивать 
+        цифровые активы на фиатные деньги и наоборот.
+        ==
+        +deposit(from: FiatAccount, to: Address, amount: decimal): Transaction
+        +withdraw(from: Address, to: FiatAccount, amount: decimal): Transaction
+    }
+    DigitalRubbleBridge o.. Address : > has_address:{address.hex}
+    DigitalRubbleBridge .. SmartContract : > deployed_as:{contract.hash}
+    DigitalRubbleBridge .up. DigitalRubbleToken : < allow_to_swap
 
 @enduml
