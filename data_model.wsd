@@ -215,5 +215,37 @@ namespace DigitalRubble {
     DigitalRubbleBridge o.. Address : > has_address:{address.hex}
     DigitalRubbleBridge .. SmartContract : > deployed_as:{contract.hash}
     DigitalRubbleBridge .up. DigitalRubbleToken : < allow_to_swap
+}
+
+namespace Gateway {
+    entity FiatAccount {
+        Фиатный аккаунт.
+        --
+        Содержит информацию о фиатных (классических)
+        банковских счетах.
+        Нужен для поддержки работы обмена (swaps) 
+        из фиатных валют в цифровые активы.
+        ==
+        +id: str!
+        +frozen(amount: decimal): Transaction
+        +unfrozen(amount: decimal): Transaction
+        +transferToWallet(wallet: Wallet, amount: decimal): Transaction
+    }
+    FiatAccount -l- Account : > associated_with:{account.id}
+
+    class Gateway {
+        Шлюз для работы с Цифровым Рублем.
+        --
+        Шлюз позволяет пользователям обменивать 
+        цифровые активы на фиатные деньги и наоборот.
+        ==
+        +get_balances(faccount: FiatAccount): dict[currency, decimal]
+        +get_balances(account: Account): dict[token, decimal]
+        +get_transactions(): list[Transaction]
+        +deposit(amount: decimal): Transaction
+        +withdraw(amount: decimal): Transaction
+    }
+    Gateway .u. FiatAccount : > allow_to_swap
+}
 
 @enduml
