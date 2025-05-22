@@ -7,6 +7,7 @@ participant "BusinessAccount (ФП получателя" as fp_out
 participant "DigitalRubbleSmartContract (РОРД)" as cb
 
 
+
 client_sender -> platform: Создание автоперевода (C2C)
 activate client_sender
 
