@@ -1,9 +1,11 @@
-@startuml
-participant "Клиент ФЛ (Инициатор)" as client_sender
-participant "Платформа ЦБ" as platform
-participant "PrivatePersonAccount-1 (ФП отправителя)" as fp_sender
-participant "PrivatePersonAccount-2 (ФП получателя)" as fp_receiver
-participant "Сontract (ЦБ)" as cb
+@startuml CASE-1 payment
+participant "Клиент ФЛ" as client_fl
+participant "Mobile" as mobile
+participant "Клиент ЮЛ" as client_ul
+participant "PrivatePersonAccount (ФП плательщика)" as fp_in
+participant "BusinessAccount (ФП получателя" as fp_out
+participant "DigitalRubbleSmartContract (РОРД)" as cb
+
 
 client_sender -> platform: Создание автоперевода (C2C)
 activate client_sender
