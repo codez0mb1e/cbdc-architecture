@@ -1,10 +1,11 @@
 @startuml CASE-1 payment
 participant "Клиент ФЛ" as client_fl
-participant mobile
+participant "Mobile" as mobile
 participant "Клиент ЮЛ" as client_ul
-participant "ФП плательщика" as fp_in
-participant "ФП получателя" as fp_out
-participant "РОРД" as cb
+participant "PrivatePersonAccount (ФП плательщика)" as fp_in
+participant "BusinessAccount (ФП получателя" as fp_out
+participant "DigitalRubbleSmartContract (РОРД)" as cb
+
 
 ... Оффлайн ...
 client_fl -> mobile: Запрос на перевод
