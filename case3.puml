@@ -1,9 +1,9 @@
 @startuml
 participant "Клиент ФЛ (Инициатор)" as client_sender
 participant "Платформа ЦБ" as platform
-participant "ФП отправителя" as fp_sender
-participant "ФП получателя" as fp_receiver
-participant "ЦБ (РОРД)" as cb
+participant "PrivatePersonAccount-1 (ФП отправителя)" as fp_sender
+participant "PrivatePersonAccount-2 (ФП получателя)" as fp_receiver
+participant "Сontract (ЦБ)" as cb
 
 client_sender -> platform: Создание автоперевода (C2C)
 activate client_sender
