@@ -1,102 +1,141 @@
 @startuml
-title Digital Rubble: Data Model
-caption © 2025, Хакатонщики Team. All rights reserved.
-footer Last updated at 2025-06-21.
+title "Цифровой рубль: Модель данных"
+caption © 2025, Хакатонщики Team. MIT License.
+footer Last updated at 2025-06-22.
 scale 2
-
-
-
 
 namespace BlockchainLayer {
 
     entity Address {
-        Address entity
+        Уникальный адрес (неизменяемая сущность).
         --
-        Has entity `NULL` address for burn and mint
-        (0x00000000000000000000000000000000000)
+        Включает в себя адреса смарт-контрактов и обычных пользователей.
+        Включает в себя специальный `0x0000`-адрес для сжигания и создания токенов.
         ==
         +hex: str!
+        +type: Literal["UserWallet", "SmartContract"]
     }
-
-    entity Contract {
-        Contract entity
-        ==
-        +hex: str!
-        +name: str?
-        +type: int
-    }
-    Contract o.. Address : > has_address:{address.hex}
-    Address .. Contract : < deployed_by:{address.hex}|deployed_at:(datetime)
-    Address .. Contract : < initiated_by:{address.hex}
-    note left of Contract::type
-        Contract types: None, 20, 721
-    end note
 
     entity Transaction {
-        Transaction entity
+        Транзакция.
+        --
+        Транзакция может быть обычной (перевод Цифровых рублей или токенов) или 
+        специальной (вызов смарт-контрактов).
         ==
         .. Generic ..
         +hash: str!
         +from: Address
         +to: Address
-        +amount: float
-        +state: str
-        +timestamp: datetime
-        .. Protocol Specific ..
-        +block_number: int64?
+        +amount: decimal
+        +state: Literal["Pending", "Confirmed", "Failed"]
+        +error: str?
+        +created_at: datetime
+        .. Contracts invocation related ..
+        +internal_transactions: list[Calls]?
+        +logs: list[byte[]]?
+        .. Protocol specific ..
+        +input_data: byte[]?
+        +block_number: uint64?
         +block_hash: str?
-        +confirmations: int64
+        +confirmations_n: uint64
         .. Fee related ..
         +fee: float
-        +gas_used: int64
-        +gas_limit: int64
-        +gas_price: float
-        .. Contract invocation related ..
-        +calls: list[Any]
-        +logs: list[Any]
     }
 
-    class Block {
-        Block entity
+
+    entity Contract {
+        Смарт-контракт (неизменяемая сущность).
+        --
+        Смарт-контракт может быть специального типа (например, взамозаменяемый токен) 
+        или общим (например, для управления активами).
         ==
-        +number: int64!
+        +name: str?
+        +ABI: byte[]
+        +type: Literal["None", "CB-20", "CB-721"]
+    }
+    Address <|-- Contract
+    Address .. Contract : < deployed_by:{address.hex}|deployed_at:(datetime)
+    Address .. Contract : < initiated_by:{address.hex}
+    Contract .. Transaction : > created_in:{transaction.hash}
+
+
+    class Block {
+        Блок в Блокчейне.
+        --
+        Блок содержит список транзакций и метаданные о блоке.
+        Блоки могут быть пустыми (например, в случае создания нового блока) или
+        содержать транзакции.
+        ==
         +hash: str!
         +parent_hash: str
         +timestamp: datetime
-        +total_difficulty: int64
-        +block_reward: float
-        +status: Literal["pending", "mined", "orphaned"]
+        +height: uint64
+        +total_difficulty: uint32
+        +block_reward: decimal
+        +status: Literal["Pending", "Mined", "Orphaned"]
     }
-    Block o.. Transaction : > has_transactions:{transaction.hash}
-    Block o.. Address : > involved_address:{address.hex}
-    Block o.. Address : > mined_by:{address.hex}
+    Block .. Transaction : > include_transactions:{transaction.hash}
+    Block .. Address : > mined_by:{address.hex}
 }
 
 
 namespace PaymentsProcessing {
-    class Wallet {
-        Wallet entity
+    entity Balances {
+        Баланс.
+        --
+        Баланс может быть в разных токенах.
         ==
-        +id: hex!
-        +get_balance(): decimal
-        +get_transactions(): list[Transaction]
-        +status: Literal["active", "inactive", "frozen"]
+        -_balances: dict[Address, decimal]
+    }
+
+    class Wallet {
+        Кошелек пользователя.
+        --
+        Используется для хранения и управления цифровыми активами.
+        Кошелек может быть связан с несколькими адресами.
+        ==
+        +get_balances(address: Address?): dict[Address, Balances]
+        +get_transactions(address: Address?): dict[Address, list[Transaction][]
+        +status: Literal["Active", "Inactive", "Frozen"]
         +limits: dict[str, float]
     }
-    Wallet o-- Address : > funded_by:{address.hex}
-    Wallet o-- Transaction : > has_transactions:{transaction.hash}
+    Wallet o-- Address : > associated_with_addresses:{address.hex}
+
+
+    class Vault {
+        Хранилище цифровых активов (Vault).
+        --
+        Специальный тип кошелька, который как хранилище для цифровых активов.
+        Хранилище может быть управляться несколькими адресами или через логику Смарт-контракта.
+        Используется для сделок с обеспечением при кредитовании/недостаточности средств у клиентов.
+        ==
+        +name: str?
+        +get_balances(): Balances
+        +depositTo(address: Address, amount: decimal): Transaction
+        +withdrawFrom(address: Address, amount: decimal): Transaction
+    }
+    Vault o-- Address : > has_address:{address.hex}
+    Vault -- Address : > managed_by:{address.hex}
+
 
     class Transfers {
-        Transfers entity
+        Специальный тип транзакции.
         ==
+        .. Generic ..
         +id: str!
         +amount: decimal
-        +timestamp: datetime
-        +from: Wallet
-        +to: Wallet
+        +token: Address
+        +created_at: datetime
+        +from: Address
+        +to: Address
+        .. Transaction related ..
+        _transaction: Transaction
+        +commit(): Transaction
+        +revert(): Transaction
+        +get_status(): Literal["Pending", "Confirmed", "Failed"]
     }
-    Transfers o-- Wallet : > from:{wallet.id}
-    Transfers o-- Wallet : > to:{wallet.id}
+    Transfers .. Wallet : > from:{wallet.id}
+    Transfers .. Wallet : > to:{wallet.id}
 }
 
 
@@ -139,19 +178,6 @@ namespace Accounting {
         ==
     }
     Account <|-- PrivatePersonAccount
-
-    class Vault {
-        Vault entity
-        --
-        TODO: sync naming with industrial practices
-        ==
-        +hex: str!
-        +name: str?
-        +depositToWallet(wallet: Wallet, amount: float): Transaction
-        +withdrawFromWallet(wallet: Wallet, amount: float): Transaction
-    }
-    Vault o-- Address : > has_address:{address.hex}
-    Vault o-- Account : > owner:{account.id}
 }
 
 
