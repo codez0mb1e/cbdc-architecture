@@ -6,9 +6,6 @@ participant "PrivatePersonAccount (ФП плательщика)" as fp_in
 participant "BusinessAccount (ФП получателя" as fp_out
 participant "DigitalRubbleSmartContract (РОРД)" as cb
 
-
-
-
 ... Оффлайн ...
 client_fl -> mobile: Запрос на перевод
 mobile -> mobile: Сохранение перевода до момента \nподключения к интернету \n(summ, address_ul)
@@ -35,7 +32,6 @@ else Средств недостаточно
         cb -> cb: Бёрн фиата и минт эквивалента в ЦР
         cb -> mobile: Перевод ЦР на кошелёк клиента
         mobile --> client_fl: Нотификация
-    end
     else Если пользователь не дал разрешение на своп
         mobile -> cb: Запрос на выдачу кредита в ЦР
         fp_in -> cb: Перевод фиата в ЦР

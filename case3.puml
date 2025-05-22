@@ -1,25 +1,22 @@
 @startuml CASE-1 payment
-participant "Клиент ФЛ" as client_fl
-participant "Mobile" as mobile
-participant "Клиент ЮЛ" as client_ul
-participant "PrivatePersonAccount (ФП плательщика)" as fp_in
-participant "BusinessAccount (ФП получателя" as fp_out
+participant "PrivatePersonAccount (ФП плательщика)" as fp_sender
 participant "DigitalRubbleSmartContract (РОРД)" as cb
+participant "BusinessAccount (ФП получателя)" as fp_receiver
 
 
 
 client_sender -> platform: Создание автоперевода (C2C)
 activate client_sender
 
-platform -> platform: ПМ БР: \n1. Проверка наличия соглашения об авто-свопе:cite[1] \n2. Формирование fingerprint \n3. Подписание ЭС \n4. Шифрование данных
+platform -> platform: ПМ БР: \n1. Проверка наличия соглашения об авто-свопе \n2. Формирование fingerprint \n3. Подписание ЭС \n4. Шифрование данных
 
 alt Регулярный перевод
 platform -> cb: Запрос на регистрацию регулярного автоперевода
 cb -> cb: Проверка лимитов и частоты
 cb --> platform: Подтверждение параметров расписания
-platform -> client_sender: Запрос подтверждения (чек-бокс + слайдер):cite[1]
+platform -> client_sender: Запрос подтверждения (чек-бокс + слайдер)
 else Разовый перевод
-platform -> client_sender: Ввод PAM-фразы получателя:cite[1]:cite[3]
+platform -> client_sender: Ввод PAM-фразы получателя
 end
 
 client_sender -> platform: Подтверждение параметров: \n- Сумма \n- Дата/периодичность \n- PAM-фраза получателя:cite[1]
@@ -30,19 +27,19 @@ fp_sender --> platform: Подтверждение резерва
 
 platform -> cb: Распоряжение на автоперевод (C2C)
 activate cb
-cb -> cb: 1. Верификация PAM-фразы:cite[3]\n2. Проверка фрод-факторов\n3. Формирование эталона ЭС
+cb -> cb: 1. Верификация PAM-фразы\n2. Проверка фрод-факторов\n3. Формирование эталона ЭС
 
 cb -> fp_sender: Списание средств (резерва)
 cb -> fp_receiver: Зачисление средств
 fp_receiver -> fp_receiver: Обновление баланса получателя
 
 cb --> platform: Уведомление об исполнении
-platform -> client_sender: "Перевод запланирован/исполнен":cite[1]
+platform -> client_sender: "Перевод запланирован/исполнен"
 platform -> fp_receiver: Уведомление получателя
-fp_receiver -> "Клиент ФЛ (Получатель)": Пуш-уведомление с PAM-фразой:cite[3]
+fp_receiver -> "Клиент ФЛ (Получатель)": Пуш-уведомление с PAM-фразой
 
 ... Дополнительные технические шаги ...
-group Шифрование и аудит:cite[1]:cite[6]
+group Шифрование и аудит
 platform -> platform: Формирование OprId
 cb -> cb: Запись в реестр автопереводов
 platform -> cb: Регулярная синхронизация статусов
