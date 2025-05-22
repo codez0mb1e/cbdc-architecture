@@ -142,39 +142,33 @@ namespace PaymentsProcessing {
 namespace Accounting {
 
     abstract class Account {
-        Digital Account entity
+        Базовая сущность для всех типов аккаунтов
         ==
         +id: str!
         +wallets: list[Wallet]
     }
     Account o-- Wallet : > has_wallets:{wallet.hex}
 
-    class FAccount {
-        Fiat Account entity
+    class FiatAccount {
+        Фиатный аккаунт.
         --
-        Contains:
-        - list of classic Bank accounts
-        - mapping the issuer Banks to their corresponding Digital twin
-
-        TODO: Move to interoperability layer
+        Содержит информацию о фиатных аккаунтах.
+        Нужен для поддержки работы свопа из фиатных валют в цифровые активы.
         ==
+        +id: str!
         +frozen(amount: decimal): Transaction
         +unfrozen(amount: decimal): Transaction
         +transferToWallet(wallet: Wallet, amount: decimal): Transaction
     }
     
     class BusinessAccount {
-        Business Account entity
-        --
-        TODO: add additional fields from CB docs
+        Эккаунт для ЮЛ
         ==
     }
     Account <|-- BusinessAccount
 
     class PrivatePersonAccount {
-        Private Person Account entity
-        --
-        TODO: add additional fields from CB docs
+        Эккаунт для ФЛ
         ==
     }
     Account <|-- PrivatePersonAccount
@@ -183,7 +177,7 @@ namespace Accounting {
 
 namespace DigitalRubble {
     class DigitalRubbleSmartContract {
-        Digital Rubble Smart Contract entity
+        Смарт-контракт Цифрового Рубля.
         ==
         .. Transfers ..
         +transfer(from: Address, to: Address, amount: decimal): Transaction
@@ -196,12 +190,11 @@ namespace DigitalRubble {
     }
 
     class Справочники {
-        Справочник entity
+        Справочники для работы с Цифровым Рублем.
         --
         -blocked_accounts: list[Account]
         -frozen_wallets: list[Wallet]
         -СУПлЦ_лист: list[str]
 }
-
 
 @enduml
