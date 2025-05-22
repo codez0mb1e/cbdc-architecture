@@ -1,0 +1,43 @@
+@startuml ConceptualLevel
+
+namespace ConceptualLevel {
+
+entity Gateway {
+    +FiatAccount: Фиатный аккаунт
+    +Gateway: Шлюз для работы с Цифровым Рублем
+}
+
+entity Accounting {
+    +Account: Базовая сущность для всех типов аккаунтов
+    +BusinessAccount: Аккаунт для юридических лиц
+    +PrivatePersonAccount: Аккаунт для физических лиц
+}
+
+entity PaymentsProcessing {
+    +Wallet: Кошелек пользователя
+    +Vault: Хранилище цифровых активов
+    +Balances: Баланс
+}
+
+entity BlockchainLevel {
+    +Address: Адрес
+    +Transaction: Транзакция
+    +SmartContract: Смарт-контракт
+    +Block: Блок в блокчейне
+}
+
+entity DigitalRouble {
+    +DigitalRoubleToken: Смарт-контракт цифрового рубля
+    +DigitalRoubleBridge: Мост для обмена цифрового рубля
+}
+
+}
+
+Gateway o-- Accounting : > Регистрация кошелька и привязка
+PaymentsProcessing o-- Accounting : > Связка с аккаунтом
+PaymentsProcessing o-- BlockchainLevel: > Использование \nадресов
+BlockchainLevel o-- DigitalRouble: > Использование \nадресов
+
+
+
+@enduml
