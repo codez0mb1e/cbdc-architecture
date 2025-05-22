@@ -1,9 +1,9 @@
 @startuml
 participant "Клиент ФЛ" as client
-participant "Платформа ЦБ" as platform
-participant "ФП клиента (Банк)" as fp
-participant "ЦБ (РОРД)" as cb
-participant "Поставщик" as provider
+participant "Сontract (Платформа ЦБ)" as platform
+participant "PrivatePersonAccount (ФП клиента)" as fp
+participant "DigitalRubbleSmartContract (РОРД)" as cb
+participant "BusinessAccount (Поставщик)" as provider
 
 client -> platform: Инициирование оплаты товара/услуги
 platform -> platform: Проверка баланса ЦР кошелька
